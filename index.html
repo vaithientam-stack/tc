@@ -2,35 +2,122 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<title>TC Thiện Tâm</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TC Thiện Tâm">
-<meta name="referrer" content="no-referrer">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0B2545">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<title>TC Thiện Tâm</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  html, body { margin: 0; height: 100%; background: #0b3d6e; overflow: hidden; }
-  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
-  #bao { display: none; color: #fff; font: 16px -apple-system, sans-serif; padding: 40px 24px; text-align: center; }
+  html,body{margin:0;height:100%;background:#F4F8FC;overflow:hidden;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#16222E}
+  #khung{position:fixed;left:0;top:env(safe-area-inset-top);width:100%;height:calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));border:0;background:#F4F8FC}
+  #cho{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#F4F8FC;z-index:5;color:#6B7F93;font-size:13px}
+  #cho .vong{width:34px;height:34px;border:3px solid #DCE6F0;border-top-color:#1565C0;border-radius:50%;animation:q .8s linear infinite}
+  @keyframes q{to{transform:rotate(360deg)}}
+  #lui{display:none;position:fixed;left:8px;top:calc(8px + env(safe-area-inset-top));z-index:7;border:0;border-radius:14px;padding:5px 12px;background:rgba(11,37,69,.8);color:#fff;font:600 13px -apple-system,sans-serif}
+  #loi{display:none;position:fixed;inset:0;align-items:center;justify-content:center;text-align:center;padding:24px;background:#F4F8FC;z-index:6;color:#6B7F93;line-height:1.6}
 </style>
 </head>
 <body>
-<div id="bao">Chưa có mã mở app.<br>Mở trang bằng đường link riêng có phần sau dấu #.</div>
+<div id="cho"><div class="vong"></div><div id="choChu">Đang mở…</div></div>
+<div id="loi"></div>
+<button id="lui" type="button">‹ Quay lại</button>
+<iframe id="khung" title="TC Thiện Tâm" allow="clipboard-write" referrerpolicy="no-referrer"></iframe>
 <script>
-  // KHÔNG chứa khoá / link riêng. Link app lấy từ phần sau dấu # (không gửi lên máy chủ GitHub):
-  //   https://<tên>.github.io/tc/#<phần sau "/macros/s/" của link app, vd AKfy...xyz/exec?k=...>
-  // Chỉ nhận đúng dạng <mã triển khai>/exec[?...] trên script.google.com -> không nhúng được trang nào khác.
-  (function () {
-    var h = decodeURIComponent((location.hash || "").slice(1));
-    if (!/^[A-Za-z0-9_-]{20,}\/exec(\?[^#\s]*)?$/.test(h)) { document.getElementById("bao").style.display = "block"; return; }
-    var f = document.createElement("iframe");
-    f.src = "https://script.google.com/macros/s/" + h;
-    f.allow = "clipboard-write";
-    document.body.appendChild(f);
-  })();
+(function () {
+  var EXEC = "https://script.google.com/macros/s/AKfycbxLwXRCNOnmPABI8ZCqzLqcDABd2GcQEF8BEhxqeE4kUs8_GexHbbAmn8V9Mwybaaqc/exec";
+
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var trongTg = !!(tg && tg.platform && tg.platform !== "unknown");
+  try {
+    if (tg) {
+      tg.ready(); tg.expand();
+      if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+      if (tg.setHeaderColor) tg.setHeaderColor("#0B2545");
+      if (tg.setBackgroundColor) tg.setBackgroundColor("#F4F8FC");
+    }
+  } catch (e) {}
+
+  var khung = document.getElementById("khung"), cho = document.getElementById("cho");
+  function hienCho(b) { cho.style.display = b ? "flex" : "none"; }
+  function baoLoi(chu) { var l = document.getElementById("loi"); l.textContent = chu; l.style.display = "flex"; hienCho(false); }
+
+  var CHO_PHEP = { u: 1, t: 1, v: 1, tuan: 1 };
+  function sach(q) {
+    var ra = [];
+    String(q || "").replace(/^\?/, "").split("&").forEach(function (p) {
+      var k = decodeURIComponent((p.split("=")[0] || "").replace(/\+/g, " "));
+      if (CHO_PHEP[k] && /^[A-Za-z0-9_\-=%.]*$/.test(p)) ra.push(p);
+    });
+    ra.push("khung=1");
+    return ra.join("&");
+  }
+
+  var q0 = location.search;
+  if (!/(^|[?&])u=\d+/.test(q0)) {
+    var hs = location.hash.replace(/^#/, "").replace(/&tgWebApp.*$/, "");
+    var mh = hs.match(/^(AKfy[A-Za-z0-9_-]{20,})\/exec\?([^#]*)$/);
+    if (mh) { EXEC = "https://script.google.com/macros/s/" + mh[1] + "/exec"; q0 = "?" + mh[2]; }
+  }
+  if (!/(^|[?&])u=\d+/.test(q0) || !/(^|[?&])t=[0-9a-f]+/i.test(q0)) { baoLoi("Link thiếu khoá riêng. Mở lại bằng nút trong chat với bot."); return; }
+
+  function lay(q, k) { var m = String(q || "").match(new RegExp("(?:^|[?&])" + k + "=([^&#]*)")); return m ? decodeURIComponent(m[1]) : ""; }
+  var KHOA_U = lay(q0, "u"), KHOA_T = lay(q0, "t");
+
+  var ngan = [];
+  function nutLui() {
+    if (!trongTg) { document.getElementById("lui").style.display = ngan.length > 1 ? "block" : "none"; return; }
+    if (!tg || !tg.BackButton) return;
+    try { if (ngan.length > 1) tg.BackButton.show(); else tg.BackButton.hide(); } catch (e) {}
+  }
+  function mo(q, them) {
+    if (them) ngan.push(q);
+    hienCho(true);
+    khung.src = EXEC + "?" + sach(q);
+    nutLui();
+  }
+  function veTruoc() { if (ngan.length > 1) { ngan.pop(); mo(ngan[ngan.length - 1], false); } }
+  if (tg && tg.BackButton) tg.BackButton.onClick(veTruoc);
+  document.getElementById("lui").onclick = veTruoc;
+  khung.addEventListener("load", function () { hienCho(false); });
+  setTimeout(function () { document.getElementById("choChu").textContent = "Mạng chậm, vẫn đang mở…"; }, 8000);
+
+  var NGUON = /^https:\/\/(script\.google\.com|([a-z0-9-]+[-.])?script\.googleusercontent\.com)$/;
+  var TRANG = { "": 1, gd: 1, chi: 1, phieu: 1, banhang: 1 };
+  function qTheo(v, thamso) {
+    var q = "u=" + encodeURIComponent(KHOA_U) + "&t=" + encodeURIComponent(KHOA_T);
+    if (v) q += "&v=" + encodeURIComponent(v);
+    var tuan = thamso && thamso.tuan;
+    if (tuan && /^\d{4}-\d{2}-\d{2}$/.test(tuan)) q += "&tuan=" + tuan;
+    return q;
+  }
+  window.addEventListener("message", function (e) {
+    if (!NGUON.test(e.origin) || !e.data || typeof e.data !== "object") return;
+    var d = e.data, lenh = typeof d.tc === "string" ? d.tc : d.loai;
+    if (lenh === "san") {
+      hienCho(false);
+      try { e.source.postMessage({ tc: "chao", loai: "chao", platform: tg ? tg.platform : "unknown" }, e.origin); } catch (x) {}
+    } else if (lenh === "mo") {
+      var v = String(d.v != null ? d.v : lay(d.q, "v"));
+      if (!TRANG.hasOwnProperty(v)) return;
+      mo(qTheo(v, d.thamso || { tuan: lay(d.q, "tuan") }), true);
+    } else if (lenh === "ve") {
+      veTruoc();
+    } else if (lenh === "dong") {
+      if (trongTg) tg.close(); else veTruoc();
+    } else if (lenh === "link" && /^https:\/\//.test(String(d.url))) {
+      if (trongTg && tg.openLink) tg.openLink(d.url); else window.open(d.url, "_blank", "noopener");
+    }
+  });
+
+  mo(q0, true);
+})();
 </script>
 </body>
 </html>
