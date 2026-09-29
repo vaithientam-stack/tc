@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Thiện Tâm">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0B2545">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<title>Thiện Tâm</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0B2545;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  #tab{position:fixed;left:0;right:0;top:0;padding:calc(6px + env(safe-area-inset-top)) 10px 8px;background:#0B2545;display:flex;gap:8px;z-index:5}
+  #tab button{flex:1;border:0;border-radius:12px;padding:10px 4px;font:700 15px -apple-system,sans-serif;background:rgba(255,255,255,.12);color:#C9D8EA}
+  #tab button.on{background:#fff;color:#0B2545}
+  .k{position:fixed;left:0;width:100%;border:0;background:#F4F8FC;top:calc(54px + env(safe-area-inset-top));height:calc(100% - 54px - env(safe-area-inset-top));display:none}
+  .k.on{display:block}
+  #rieng{display:none;position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:6;border:0;border-radius:16px;padding:7px 12px;background:rgba(11,37,69,.85);color:#fff;font:600 12.5px -apple-system,sans-serif}
+  #loi{display:none;position:fixed;inset:0;align-items:center;justify-content:center;text-align:center;padding:24px;background:#F4F8FC;color:#6B7F93;line-height:1.6;z-index:9}
+</style>
+</head>
+<body>
+<div id="tab"><button type="button" data-t="tc" class="on">📊 Tài chính</button><button type="button" data-t="sx">🏭 Sản xuất</button></div>
+<iframe id="k_tc" class="k on" title="Tài chính" allow="clipboard-write" referrerpolicy="no-referrer"></iframe>
+<iframe id="k_sx" class="k" title="Sản xuất" allow="clipboard-write" referrerpolicy="no-referrer"></iframe>
+<button id="rieng" type="button">Mở riêng ↗</button>
+<div id="loi"></div>
+<script>
+(function () {
+  var hs = decodeURIComponent(location.hash.replace(/^#/, ""));
+  var p = hs.split("~sx~"), tc = p[0] || "", sx = p[1] || "";
+  if (!/^AKfy[A-Za-z0-9_-]{20,}\/exec\?[^#\s]*$/.test(tc) || !/^AKfy[A-Za-z0-9_-]{20,}$/.test(sx)) {
+    var l = document.getElementById("loi"); l.textContent = "Link thiếu khoá riêng. Gõ APPLINK trong chat riêng với bot để lấy link App chung."; l.style.display = "flex"; return;
+  }
+  var SX = "https://script.google.com/macros/s/" + sx + "/exec";
+  var ktc = document.getElementById("k_tc"), ksx = document.getElementById("k_sx"), rieng = document.getElementById("rieng");
+  ktc.src = "index.html#" + tc;
+  var daMoSx = false;
+  function chon(t) {
+    document.querySelectorAll("#tab button").forEach(function (b) { b.className = b.dataset.t === t ? "on" : ""; });
+    ktc.className = "k" + (t === "tc" ? " on" : ""); ksx.className = "k" + (t === "sx" ? " on" : "");
+    if (t === "sx" && !daMoSx) { ksx.src = SX; daMoSx = true; }
+    rieng.style.display = t === "sx" ? "block" : "none";
+    try { localStorage.setItem("tab_chung", t); } catch (e) {}
+  }
+  document.querySelectorAll("#tab button").forEach(function (b) { b.onclick = function () { chon(b.dataset.t); }; });
+  rieng.onclick = function () { window.open(SX, "_blank"); };
+  var cu = "tc"; try { cu = localStorage.getItem("tab_chung") || "tc"; } catch (e) {}
+  chon(cu === "sx" ? "sx" : "tc");
+})();
+</script>
+</body>
+</html>
