@@ -37,7 +37,7 @@
   if (!/^AKfy[A-Za-z0-9_-]{20,}\/exec\?[^#\s]*$/.test(tc) || !/^AKfy[A-Za-z0-9_-]{20,}$/.test(sx)) {
     var l = document.getElementById("loi"); l.textContent = "Link thiếu khoá riêng. Gõ APPLINK trong chat riêng với bot để lấy link App chung."; l.style.display = "flex"; return;
   }
-  var SX = "https://script.google.com/macros/s/" + sx + "/exec";
+       var SX = "https://script.google.com/macros/s/" + tc + "&v=sx";
   var ktc = document.getElementById("k_tc"), ksx = document.getElementById("k_sx"), rieng = document.getElementById("rieng");
   ktc.src = "index.html#" + tc;
   var daMoSx = false;
