@@ -21,6 +21,8 @@
   #cho .vong{width:34px;height:34px;border:3px solid #DCE6F0;border-top-color:#1565C0;border-radius:50%;animation:q .8s linear infinite}
   @keyframes q{to{transform:rotate(360deg)}}
   #lui{display:none;position:fixed;left:8px;top:calc(8px + env(safe-area-inset-top));z-index:7;border:0;border-radius:14px;padding:5px 12px;background:rgba(11,37,69,.8);color:#fff;font:600 13px -apple-system,sans-serif}
+  #anh{position:fixed;left:0;top:env(safe-area-inset-top);width:100%;height:calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));border:0;background:#F4F8FC;z-index:4;display:none}
+  #moi{display:none;position:fixed;left:50%;transform:translateX(-50%);top:calc(6px + env(safe-area-inset-top));z-index:8;padding:3px 10px;border-radius:10px;background:rgba(11,37,69,.78);color:#fff;font:600 11px -apple-system,sans-serif}
   #loi{display:none;position:fixed;inset:0;align-items:center;justify-content:center;text-align:center;padding:24px;background:#F4F8FC;z-index:6;color:#6B7F93;line-height:1.6}
 </style>
 </head>
@@ -28,6 +30,8 @@
 <div id="cho"><div class="vong"></div><div id="choChu">Đang mở…</div></div>
 <div id="loi"></div>
 <button id="lui" type="button">‹ Quay lại</button>
+<div id="moi">Đang cập nhật…</div>
+<iframe id="anh" title="Bản lần trước" sandbox=""></iframe>
 <iframe id="khung" title="TC Thiện Tâm" allow="clipboard-write" referrerpolicy="no-referrer"></iframe>
 <script>
 (function () {
@@ -76,16 +80,30 @@
     if (!tg || !tg.BackButton) return;
     try { if (ngan.length > 1) tg.BackButton.show(); else tg.BackButton.hide(); } catch (e) {}
   }
+  // [16/10/2026] mở nhanh: hiện ngay bản chụp lần trước (chỉ xem, không bấm được) trong lúc trang thật tải 2–3 giây
+  var anh = document.getElementById("anh"), moi = document.getElementById("moi"), hienTai = "", choThat = 0;
+  function khoaAnh(q) { return "tcAnh:" + KHOA_U + ":" + lay(q, "v"); }
+  function docAnh(q) { try { return localStorage.getItem(khoaAnh(q)) || ""; } catch (e) { return ""; } }
+  function hienThat() {
+    clearTimeout(choThat);
+    khung.style.visibility = "visible"; anh.style.display = "none"; moi.style.display = "none"; hienCho(false);
+  }
   function mo(q, them) {
     if (them) ngan.push(q);
-    hienCho(true);
+    hienTai = q;
+    var a = docAnh(q);
+    if (a) {
+      anh.srcdoc = a; anh.style.display = "block"; moi.style.display = "block"; hienCho(false);
+      khung.style.visibility = "hidden";
+      clearTimeout(choThat); choThat = setTimeout(hienThat, 15000);
+    } else { anh.style.display = "none"; moi.style.display = "none"; khung.style.visibility = "visible"; hienCho(true); }
     khung.src = EXEC + "?" + sach(q);
     nutLui();
   }
   function veTruoc() { if (ngan.length > 1) { ngan.pop(); mo(ngan[ngan.length - 1], false); } }
   if (tg && tg.BackButton) tg.BackButton.onClick(veTruoc);
   document.getElementById("lui").onclick = veTruoc;
-  khung.addEventListener("load", function () { hienCho(false); });
+  khung.addEventListener("load", function () { if (anh.style.display === "block") { clearTimeout(choThat); choThat = setTimeout(hienThat, 6000); } else hienCho(false); });
   setTimeout(function () { document.getElementById("choChu").textContent = "Mạng chậm, vẫn đang mở…"; }, 8000);
 
   var NGUON = /^https:\/\/(script\.google\.com|([a-z0-9-]+[-.])?script\.googleusercontent\.com)$/;
@@ -100,8 +118,12 @@
   window.addEventListener("message", function (e) {
     if (!NGUON.test(e.origin) || !e.data || typeof e.data !== "object") return;
     var d = e.data, lenh = typeof d.tc === "string" ? d.tc : d.loai;
-    if (lenh === "san") {
-      hienCho(false);
+    if (lenh === "xong") {
+      hienThat();
+    } else if (lenh === "anh" && typeof d.html === "string" && d.html.length < 1500000) {
+      try { localStorage.setItem(khoaAnh(hienTai), d.html); } catch (x) {}
+    } else if (lenh === "san") {
+      if (anh.style.display !== "block") hienCho(false);
       try { e.source.postMessage({ tc: "chao", loai: "chao", platform: tg ? tg.platform : "unknown" }, e.origin); } catch (x) {}
     } else if (lenh === "mo") {
       var v = String(d.v != null ? d.v : lay(d.q, "v"));
